@@ -17,8 +17,9 @@ What it asks for:
   every --interval s   GET devices/<id>/state
   every --energy-interval s
                        the energy of yesterday and today (DAILY): LG keeps
-                       today's total up to date during the day, so the
-                       differences give the energy per interval; yesterday too,
+                       today's total up to date during the day (every
+                       5 minutes, checked 2026-11-06), so the differences give
+                       the energy per update; yesterday too,
                        so nothing is lost around midnight, whichever timezone
                        LG counts its days in
   at start, then daily GET devices, devices/<id>/profile, devices/energy/<id>/profile,
@@ -162,8 +163,8 @@ def main():
     ap = argparse.ArgumentParser(description="Raw logger for an LG ThinQ air conditioner (ThinQ Connect API)")
     ap.add_argument("--logdir", required=True, help="where the daily .jsonl files go")
     ap.add_argument("--interval", type=float, default=30, help="seconds between status requests (default 30)")
-    ap.add_argument("--energy-interval", type=float, default=300,
-                    help="seconds between requests for today's energy so far (default 300; 0 = off)")
+    ap.add_argument("--energy-interval", type=float,
+                    help="seconds between requests for today's energy so far (default: the same as --interval; 0 = off)")
     ap.add_argument("--device", help="device id (default: the only air conditioner on the account)")
     ap.add_argument("--token-file", default="~/.config/lg-thinq/token", help="used when systemd gives no credential")
     ap.add_argument("--client-id-file", default="client-id", help="random client id, kept between runs")
@@ -172,6 +173,8 @@ def main():
     a = ap.parse_args()
     signal.signal(signal.SIGTERM, on_term)
     signal.signal(signal.SIGINT, on_term)
+    if a.energy_interval is None:
+        a.energy_interval = a.interval
     lg = Logger(a)
 
     fails = 0
