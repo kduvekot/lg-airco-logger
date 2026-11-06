@@ -1,0 +1,12 @@
+[Unit]
+Description=Sync the LG airco logs to the NAS every 5 minutes
+Documentation=https://github.com/kduvekot/lg-airco-logger
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Unit=lg-airco-sync.service
+
+[Install]
+WantedBy=timers.target

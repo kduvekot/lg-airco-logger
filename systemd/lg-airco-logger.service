@@ -1,0 +1,41 @@
+[Unit]
+Description=LG airco raw logger (ThinQ Connect API)
+Documentation=https://github.com/kduvekot/lg-airco-logger
+Wants=network-online.target
+After=network-online.target time-sync.target
+
+[Service]
+Type=simple
+User=lg-airco
+Group=lg-airco
+WorkingDirectory=/var/lib/lg-airco-logger
+LoadCredential=token:/etc/lg-airco-logger/token
+ExecStart=/usr/bin/python3 /opt/lg-airco-logger/lg-airco-logger.py \
+    --logdir /var/lib/lg-airco-logger/logs \
+    --client-id-file /var/lib/lg-airco-logger/client-id \
+    --interval 30
+Restart=always
+RestartSec=60s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=/var/lib/lg-airco-logger
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,46 @@
+[Unit]
+Description=LG airco log sync to the NAS (rclone copy)
+Documentation=https://github.com/kduvekot/lg-airco-logger
+Wants=network-online.target
+After=network-online.target
+ConditionPathIsDirectory=/var/lib/lg-airco-logger/logs
+
+[Service]
+Type=oneshot
+User=lg-airco
+Group=lg-airco
+WorkingDirectory=/var/lib/lg-airco-logger
+EnvironmentFile=/etc/lg-airco-logger/sync.env
+# copy only adds and updates: nothing on the NAS is ever deleted; files that
+# are still growing (today's) need --local-no-check-updated
+ExecStart=/usr/bin/rclone copy \
+    --config /etc/lg-airco-logger/rclone.conf \
+    --log-level INFO \
+    --stats 0 \
+    --local-no-check-updated \
+    /var/lib/lg-airco-logger/logs \
+    ${REMOTE}
+TimeoutStartSec=5min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadOnlyPaths=/var/lib/lg-airco-logger /etc/lg-airco-logger
+
+[Install]
+WantedBy=multi-user.target
