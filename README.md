@@ -15,6 +15,7 @@ library only; runs fine on a Raspberry Pi 1.
 | When | Request | `kind` |
 |---|---|---|
 | every 30 s | `GET devices/<id>/state`: on/off, mode, measured and target temperature, fan speed, vanes, power save, filter, timers | `state` |
+| every 30 s | `GET devices/energy/<id>/usage?…period=DAILY` for yesterday and today: LG keeps today's total up to date during the day (every 5 minutes so far), so the differences give the energy per update; asking every 30 s shows at once if LG ever updates more often | `energy_today` |
 | at start, then daily at 08:30 | `GET devices`, `devices/<id>/profile`, `devices/energy/<id>/profile`, `route` | `devices`, `profile`, `energy_profile`, `route` |
 | at start, then daily at 08:30 | `GET devices/energy/<id>/usage?…period=DAILY`: the energy per day in Wh; at start every month LG still keeps, then the last 8 days | `energy` |
 | a request that fails | the status and LG's answer, or the reason | `error` |
@@ -32,7 +33,11 @@ specific to one home: keep the logs out of public places).
 
 - Energy per day and per month only, in Wh; no hours, and no current power
   (the LG app shows those through LG's internal app interface, which is not
-  part of this API).
+  part of this API). But today's figure is already there during the day, and
+  LG updates it every 5 minutes (checked 2026-11-06 with requests every
+  minute: a new total at about :x0:30 and :x5:30 UTC, unchanged in between;
+  +54 Wh each while the meters showed the airco at about 0.65 kW), so the
+  differences give the energy per 5 minutes after all.
 - About 12 months of energy history; older months are refused (`1102
   Unacceptable parameters`). The daily energy request keeps the history from
   being lost. LG documents the limits in its public API reference
@@ -43,8 +48,9 @@ specific to one home: keep the logs out of public places).
 - The measured temperature comes in steps of 0.5 °C.
 - How often you may ask is not documented. A test of 76 status requests,
   every 30, then 10, then 5 seconds, was answered without a single error
-  (0.6–0.9 s each). The logger asks every 30 s (2,880 a day) and on any error
-  waits twice as long each time, up to 30 minutes.
+  (0.6–0.9 s each). The logger asks for the status and today's energy every
+  30 s (5,760 requests a day) and on any status error waits twice as long
+  each time, up to 30 minutes.
 
 ## The token
 
