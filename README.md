@@ -15,6 +15,7 @@ library only; runs fine on a Raspberry Pi 1.
 | When | Request | `kind` |
 |---|---|---|
 | every 30 s | `GET devices/<id>/state`: on/off, mode, measured and target temperature, fan speed, vanes, power save, filter, timers | `state` |
+| every 5 min | `GET devices/energy/<id>/usage?…period=DAILY` for yesterday and today: LG keeps today's total up to date during the day, so the differences give the energy per 5 minutes | `energy_today` |
 | at start, then daily at 08:30 | `GET devices`, `devices/<id>/profile`, `devices/energy/<id>/profile`, `route` | `devices`, `profile`, `energy_profile`, `route` |
 | at start, then daily at 08:30 | `GET devices/energy/<id>/usage?…period=DAILY`: the energy per day in Wh; at start every month LG still keeps, then the last 8 days | `energy` |
 | a request that fails | the status and LG's answer, or the reason | `error` |
@@ -32,7 +33,10 @@ specific to one home: keep the logs out of public places).
 
 - Energy per day and per month only, in Wh; no hours, and no current power
   (the LG app shows those through LG's internal app interface, which is not
-  part of this API).
+  part of this API). But today's figure is already there during the day, and
+  LG updates it within minutes (checked 2026-11-06: +54 Wh in 5 minutes while
+  the meters showed the airco at about 0.6 kW), so asking for it every 5
+  minutes gives the energy per 5 minutes after all.
 - About 12 months of energy history; older months are refused (`1102
   Unacceptable parameters`). The daily energy request keeps the history from
   being lost. Not documented publicly: LG's ThinQ Connect documentation is

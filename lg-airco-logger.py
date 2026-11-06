@@ -9,11 +9,18 @@ later:
   {"t": "2026-11-06T07:55:35.123Z", "kind": "state", "path": "devices/<id>/state",
    "http": 200, "ms": 674, "body": {... LG's answer as it came ...}}
 
-kinds: state (every --interval seconds), devices, profile, energy_profile,
-route, energy (daily), error (a request that failed: no answer, or not 200).
+kinds: state (every --interval seconds), energy_today (every --energy-interval
+seconds), devices, profile, energy_profile, route, energy (daily), error (a
+request that failed: no answer, or not 200).
 
 What it asks for:
   every --interval s   GET devices/<id>/state
+  every --energy-interval s
+                       the energy of yesterday and today (DAILY): LG keeps
+                       today's total up to date during the day, so the
+                       differences give the energy per interval; yesterday too,
+                       so nothing is lost around midnight, whichever timezone
+                       LG counts its days in
   at start, then daily GET devices, devices/<id>/profile, devices/energy/<id>/profile,
                        route, and the energy per day (devices/energy/<id>/usage,
                        DAILY): at start every month LG still keeps (about 12),
@@ -136,6 +143,12 @@ class Logger:
             time.sleep(1)
         return ok
 
+    def energy_today(self, dev):
+        """Yesterday's and today's energy so far (local dates)."""
+        today = date.today()
+        return self.get("energy_today", f"devices/energy/{dev}/usage?property=energyUsage&period=DAILY"
+                                        f"&startDate={today - timedelta(days=1):%Y%m%d}&endDate={today:%Y%m%d}")
+
 
 def next_daily(now):
     """The next local DAILY_AT moment after now (epoch seconds)."""
@@ -149,6 +162,8 @@ def main():
     ap = argparse.ArgumentParser(description="Raw logger for an LG ThinQ air conditioner (ThinQ Connect API)")
     ap.add_argument("--logdir", required=True, help="where the daily .jsonl files go")
     ap.add_argument("--interval", type=float, default=30, help="seconds between status requests (default 30)")
+    ap.add_argument("--energy-interval", type=float, default=300,
+                    help="seconds between requests for today's energy so far (default 300; 0 = off)")
     ap.add_argument("--device", help="device id (default: the only air conditioner on the account)")
     ap.add_argument("--token-file", default="~/.config/lg-thinq/token", help="used when systemd gives no credential")
     ap.add_argument("--client-id-file", default="client-id", help="random client id, kept between runs")
@@ -171,6 +186,7 @@ def main():
     print(f"logging device {dev} every {a.interval:g} s to {a.logdir}", flush=True)
     lg.daily(dev, first_run=True)
     due_daily = next_daily(time.time())
+    due_energy = time.time()
     fails = 0
     next_t = time.time()
     while not stop:
@@ -181,6 +197,9 @@ def main():
         if now >= due_daily:
             lg.daily(dev, first_run=False)
             due_daily = next_daily(time.time())
+        if a.energy_interval > 0 and now >= due_energy and fails == 0:
+            lg.energy_today(dev)                            # a failure here is logged; the status request decides the backoff
+            due_energy = max(due_energy + a.energy_interval, time.time())
         if lg.get("state", f"devices/{dev}/state") is None:
             fails += 1
             wait = min(MAX_BACKOFF, a.interval * 2 ** fails)
