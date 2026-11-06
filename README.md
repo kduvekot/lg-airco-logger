@@ -35,8 +35,11 @@ specific to one home: keep the logs out of public places).
   part of this API).
 - About 12 months of energy history; older months are refused (`1102
   Unacceptable parameters`). The daily energy request keeps the history from
-  being lost. Not documented publicly: LG's ThinQ Connect documentation is
-  for its business partners.
+  being lost. LG documents the limits in its public API reference
+  ([ThinQ Connect](https://smartsolution.developer.lge.com/en/apiManage/thinq_connect),
+  "Retrieve Energy Data"): `DAILY` up to 31 days per request, `MONTHLY` up to
+  12 months. The same page says personal access tokens are for personal,
+  non-commercial use.
 - The measured temperature comes in steps of 0.5 °C.
 - How often you may ask is not documented. A test of 76 status requests,
   every 30, then 10, then 5 seconds, was answered without a single error
