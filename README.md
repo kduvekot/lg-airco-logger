@@ -120,7 +120,9 @@ sudo apt install rsync
 sudo ssh-keygen -t ed25519 -N '' -C lg-airco-push -f /etc/lg-airco-logger/push_key
 sudo chmod 600 /etc/lg-airco-logger/push_key
 echo 'PUSH_TARGET=<user>@<host>' | sudo tee /etc/lg-airco-logger/push.env
-sudo sh -c 'ssh-keyscan -t ed25519 <host> > /etc/lg-airco-logger/push_known_hosts'
+sudo sh -c 'ssh-keyscan <host> > /etc/lg-airco-logger/push_known_hosts'
+# (or, safer: the host's own key line, "<host> " + the first two fields of one
+# of its /etc/ssh/ssh_host_*_key.pub files, copied over a trusted connection)
 
 # on the receiving machine (needs rsync): a user that may only write one folder
 sudo apt install rsync

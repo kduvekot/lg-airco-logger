@@ -17,9 +17,11 @@ LoadCredential=push_key:/etc/lg-airco-logger/push_key
 ExecStart=/usr/bin/python3 /opt/lg-airco-logger/lg-airco-compact.py \
     --logdir /var/lib/lg-airco-logger/logs \
     --outdir /var/lib/lg-airco-logger/compact
-# PUSH_TARGET=<user>@<host>: the receiving side fixes the folder (rrsync)
+# PUSH_TARGET=<user>@<host>: the receiving side fixes the folder (rrsync).
+# curve25519 instead of OpenSSH 10's default post-quantum key exchange: between
+# two Raspberry Pi 1s the handshake takes 9 s instead of 22 s (measured 2026-11-06).
 ExecStart=/usr/bin/rsync -rt --chmod=D755,F644 --exclude=/.state.json --exclude=*.tmp \
-    -e "ssh -i ${CREDENTIALS_DIRECTORY}/push_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/lg-airco-logger/push_known_hosts -o ConnectTimeout=15" \
+    -e "ssh -i ${CREDENTIALS_DIRECTORY}/push_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/lg-airco-logger/push_known_hosts -o ConnectTimeout=15 -o KexAlgorithms=curve25519-sha256" \
     /var/lib/lg-airco-logger/compact/ ${PUSH_TARGET}:
 TimeoutStartSec=2min
 NoNewPrivileges=true
