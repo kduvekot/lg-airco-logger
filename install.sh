@@ -8,13 +8,16 @@
 #   /etc/lg-airco-logger/token        the ThinQ Connect personal access token
 #   /etc/lg-airco-logger/rclone.conf  the rclone remote for the NAS
 #   /etc/lg-airco-logger/sync.env     REMOTE=<remote>:<path>
+# and, only for pushing the compact extract to a live view (optional):
+#   /etc/lg-airco-logger/push.env, push_key, push_known_hosts
 set -eu
 cd "$(dirname "$0")"
 
 id lg-airco >/dev/null 2>&1 || useradd --system --home-dir /var/lib/lg-airco-logger --shell /usr/sbin/nologin lg-airco
 install -d -m 755 /opt/lg-airco-logger
-install -m 644 lg-airco-logger.py /opt/lg-airco-logger/
+install -m 644 lg-airco-logger.py lg-airco-compact.py /opt/lg-airco-logger/
 install -d -m 750 -o lg-airco -g lg-airco /var/lib/lg-airco-logger
+install -d -m 750 -o lg-airco -g lg-airco /var/lib/lg-airco-logger/compact
 install -d -m 750 -o root -g lg-airco /etc/lg-airco-logger
 for f in systemd/*.service systemd/*.timer; do
     install -m 644 "$f" /etc/systemd/system/
@@ -32,3 +35,6 @@ else
 fi
 echo "  sudo systemctl enable --now lg-airco-logger.service lg-airco-sync.timer"
 echo "  sudo systemctl restart lg-airco-logger.service    # after an update"
+if [ -f /etc/lg-airco-logger/push.env ]; then
+    echo "  sudo systemctl enable --now lg-airco-push.timer   # compact extract to the live view"
+fi

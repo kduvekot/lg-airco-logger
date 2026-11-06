@@ -1,0 +1,48 @@
+[Unit]
+Description=LG airco compact extract, pushed to a live view (rsync)
+Documentation=https://github.com/kduvekot/lg-airco-logger
+Wants=network-online.target
+After=network-online.target
+ConditionPathIsDirectory=/var/lib/lg-airco-logger/logs
+ConditionPathExists=/etc/lg-airco-logger/push.env
+
+[Service]
+Type=oneshot
+User=lg-airco
+Group=lg-airco
+WorkingDirectory=/var/lib/lg-airco-logger
+EnvironmentFile=/etc/lg-airco-logger/push.env
+# the SSH key that may only write into the receiving folder (see README)
+LoadCredential=push_key:/etc/lg-airco-logger/push_key
+ExecStart=/usr/bin/python3 /opt/lg-airco-logger/lg-airco-compact.py \
+    --logdir /var/lib/lg-airco-logger/logs \
+    --outdir /var/lib/lg-airco-logger/compact
+# PUSH_TARGET=<user>@<host>: the receiving side fixes the folder (rrsync)
+ExecStart=/usr/bin/rsync -rt --chmod=D755,F644 --exclude=/.state.json --exclude=*.tmp \
+    -e "ssh -i ${CREDENTIALS_DIRECTORY}/push_key -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/lg-airco-logger/push_known_hosts -o ConnectTimeout=15" \
+    /var/lib/lg-airco-logger/compact/ ${PUSH_TARGET}:
+TimeoutStartSec=2min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadOnlyPaths=/var/lib/lg-airco-logger /etc/lg-airco-logger
+ReadWritePaths=/var/lib/lg-airco-logger/compact
+
+[Install]
+WantedBy=multi-user.target
