@@ -92,6 +92,47 @@ Check: `journalctl -u lg-airco-logger -n 20`, and the newest lines with
 `sudo tail -n 2 /var/lib/lg-airco-logger/logs/$(date -u +%Y)/$(date -u +%Y%m%d).jsonl`.
 After an update: `sudo ./install.sh && sudo systemctl restart lg-airco-logger`.
 
+## Compact extract for a live view (optional)
+
+`lg-airco-compact.py` turns the raw logs into a small file per UTC day,
+`/var/lib/lg-airco-logger/compact/YYYY/YYYYMMDD.csv`: only what changed, a
+few hundred lines (about 10 KB) a day instead of LG's full answers.
+
+```text
+2026-11-06T16:13:17Z,state,POWER_ON,HEAT,HIGH,25.5,30   operation, mode, fan, airco's own reading, target (°C)
+2026-11-06T16:13:16Z,energy,20261106,9591               LG's date, LG's total for that day so far (Wh)
+```
+
+A `state` line comes when something changes, at least every 15 minutes, and
+as the first line of each file (with the last energy totals). Every run
+continues where the last one stopped, so it is cheap enough to run every
+minute on a Pi 1; `--rebuild` makes everything again from the raw logs, which
+stay the source.
+
+`lg-airco-push.timer` runs it every minute and copies the compact folder with
+`rsync` to another machine, e.g. for [housemon-lite](https://github.com/kduvekot/housemon-lite).
+The receiving side decides where the files may go: its `authorized_keys`
+allows this key only `rrsync` into one folder.
+
+```sh
+# on the logger (needs rsync): a key of its own, and where to push to
+sudo apt install rsync
+sudo ssh-keygen -t ed25519 -N '' -C lg-airco-push -f /etc/lg-airco-logger/push_key
+sudo chmod 600 /etc/lg-airco-logger/push_key
+echo 'PUSH_TARGET=<user>@<host>' | sudo tee /etc/lg-airco-logger/push.env
+sudo sh -c 'ssh-keyscan -t ed25519 <host> > /etc/lg-airco-logger/push_known_hosts'
+
+# on the receiving machine (needs rsync): a user that may only write one folder
+sudo apt install rsync
+sudo useradd --system --home-dir /var/lib/<user> --create-home --shell /bin/sh <user>
+sudo install -d -m 755 -o <user> -g <user> <folder>
+# in /var/lib/<user>/.ssh/authorized_keys (mode 600, owned by <user>), one line:
+#   restrict,command="/usr/bin/rrsync -wo <folder>" ssh-ed25519 AAAA… lg-airco-push
+
+# back on the logger
+sudo systemctl enable --now lg-airco-push.timer
+```
+
 ## Files
 
 | File | |
@@ -99,4 +140,6 @@ After an update: `sudo ./install.sh && sudo systemctl restart lg-airco-logger`.
 | `lg-airco-logger.py` | the logger |
 | `systemd/lg-airco-logger.service` | runs it as user `lg-airco`, the token through `LoadCredential` |
 | `systemd/lg-airco-sync.service`, `.timer` | `rclone copy` of the logs to the NAS every 5 minutes |
+| `lg-airco-compact.py` | the compact extract (see above) |
+| `systemd/lg-airco-push.service`, `.timer` | the extract plus `rsync` to a live view, every minute (optional) |
 | `install.sh` | user, folders, files and units; leaves the secrets alone |

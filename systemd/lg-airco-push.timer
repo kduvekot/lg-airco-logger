@@ -1,0 +1,12 @@
+[Unit]
+Description=Make and push the LG airco compact extract every minute
+Documentation=https://github.com/kduvekot/lg-airco-logger
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=5s
+Unit=lg-airco-push.service
+
+[Install]
+WantedBy=timers.target
