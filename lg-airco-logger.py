@@ -16,12 +16,14 @@ request that failed: no answer, or not 200).
 What it asks for:
   every --interval s   GET devices/<id>/state
   every --energy-interval s
-                       the energy of yesterday and today (DAILY): LG keeps
-                       today's total up to date during the day (every
-                       5 minutes, checked 2026-11-06), so the differences give
-                       the energy per update; yesterday too,
-                       so nothing is lost around midnight, whichever timezone
-                       LG counts its days in
+                       the energy of yesterday, today and tomorrow by the UTC
+                       date (DAILY): LG keeps today's total up to date during
+                       the day (every 5 minutes, checked 2026-11-06), so the
+                       differences give the energy per update. LG counts its
+                       days in the home's own timezone (Dutch days, checked
+                       2026-11-07), which may differ from this computer's
+                       clock (bargus runs on UTC): the three UTC dates always
+                       include LG's current day and the one before
   at start, then daily GET devices, devices/<id>/profile, devices/energy/<id>/profile,
                        route, and the energy per day (devices/energy/<id>/usage,
                        DAILY): at start every month LG still keeps (about 12),
@@ -145,10 +147,12 @@ class Logger:
         return ok
 
     def energy_today(self, dev):
-        """Yesterday's and today's energy so far (local dates)."""
-        today = date.today()
+        """The energy so far of yesterday, today and tomorrow by the UTC date:
+        whatever timezone LG counts its days in, its current day and the one
+        before are among them (a day that has not started yet answers 0)."""
+        today = datetime.now(timezone.utc).date()
         return self.get("energy_today", f"devices/energy/{dev}/usage?property=energyUsage&period=DAILY"
-                                        f"&startDate={today - timedelta(days=1):%Y%m%d}&endDate={today:%Y%m%d}")
+                                        f"&startDate={today - timedelta(days=1):%Y%m%d}&endDate={today + timedelta(days=1):%Y%m%d}")
 
 
 def next_daily(now):

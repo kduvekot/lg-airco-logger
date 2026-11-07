@@ -12,7 +12,9 @@ Files: <outdir>/YYYY/YYYYMMDD.csv, by UTC date like the raw logs. Lines:
       knows the logger is alive), and as the first line of every file
   2026-11-06T16:13:16Z,energy,20261106,9591
       time, "energy", LG's date (YYYYMMDD), LG's total for that day so far (Wh):
-      written when the total of a day changes (LG updates it every 5 minutes)
+      written when the total of a day changes (LG updates it every 5 minutes);
+      a total of 0 is not written (a day that has not started, e.g. tomorrow,
+      which the logger also asks for: its first line is its first real update)
 
 The times are when the logger asked (UTC). Every run continues where the
 previous one stopped (<outdir>/.state.json); a run takes a fraction of a
@@ -90,7 +92,7 @@ class Compactor:
         elif r["kind"] == "energy_today":      # not "energy": the daily 12-month backfill
             for x in (resp.get("result") or {}).get("dataList") or []:
                 d, wh = x.get("usedDate"), x.get("energyUsage")
-                if d and wh is not None and self.energy.get(d) != wh:
+                if d and wh and self.energy.get(d) != wh:
                     self.energy[d] = wh
                     self.emit(t, ["energy", d, wh])
             for d in sorted(self.energy)[:-3]:  # only the last days are needed
