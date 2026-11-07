@@ -15,7 +15,7 @@ library only; runs fine on a Raspberry Pi 1.
 | When | Request | `kind` |
 |---|---|---|
 | every 30 s | `GET devices/<id>/state`: on/off, mode, measured and target temperature, fan speed, vanes, power save, filter, timers | `state` |
-| every 30 s | `GET devices/energy/<id>/usage?…period=DAILY` for yesterday and today: LG keeps today's total up to date during the day (every 5 minutes so far), so the differences give the energy per update; asking every 30 s shows at once if LG ever updates more often | `energy_today` |
+| every 30 s | `GET devices/energy/<id>/usage?…period=DAILY` for yesterday, today and tomorrow (UTC dates, so LG's own day is always included): LG keeps today's total up to date during the day (every 5 minutes so far), so the differences give the energy per update; asking every 30 s shows at once if LG ever updates more often | `energy_today` |
 | at start, then daily at 08:30 | `GET devices`, `devices/<id>/profile`, `devices/energy/<id>/profile`, `route` | `devices`, `profile`, `energy_profile`, `route` |
 | at start, then daily at 08:30 | `GET devices/energy/<id>/usage?…period=DAILY`: the energy per day in Wh; at start every month LG still keeps, then the last 8 days | `energy` |
 | a request that fails | the status and LG's answer, or the reason | `error` |
